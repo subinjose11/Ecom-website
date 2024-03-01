@@ -19,6 +19,38 @@ def db_connection():
     except pymysql.Error as e:
         print(e)
     return conn
+
+
+# Method to register a new user
+@app.route('/register', methods=['POST'])
+def register():
+    conn = db_connection()
+    cursor = conn.cursor()
+    if request.method == 'POST':
+        try:
+            username = request.form['user_name']
+            passcode = request.form['passcode']
+            confirm_passcode= request.form['confirm_passcode']
+            
+        except KeyError as e:
+            return jsonify({'error': f'KeyError: {e}'}), 400 
+    
+    cursor.execute("SELECT * FROM user_details Where username='{}'".format(username)) 
+    result=[row for row in cursor.fetchall()]    
+        
+    if result:
+        return jsonify ("Username already exists. Please choose another username.")
+    else:
+        if passcode!=confirm_passcode:
+            return jsonify("Please verify the confirm password")
+        else:
+            query="INSERT INTO user_details (username, passcode) VALUES ('{}','{}');".format (username, passcode)
+            cursor.execute(query)
+            conn.commit()
+            return jsonify("Registration successful.")
+
+
+# Method to Post and get customer_details
 @app.route('/customer_details', methods=['POST','GET'])
 def customer_details():
     conn = db_connection()
@@ -49,8 +81,8 @@ def customer_details():
         for row in cursor.fetchall():
             customers.append(row)
         conn.close()
-        return jsonify(customers)           
-
+        return jsonify(customers)   
+        
 
 if __name__=='__main__':
     app.run(debug=True)
